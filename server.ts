@@ -26,7 +26,7 @@ api.get('/api/login', (req, res) => {
   let password = data.password;
 
   let passwordHash = crypto.hash('sha256', (crypto.hash('sha512', password)));
-  let originalUserPasswordHash = mongoose
+  // let originalUserPasswordHash = mongoose
 })
 
 nextApp.prepare().then(() => {
