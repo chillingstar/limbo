@@ -7,8 +7,28 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  const handleLogin = (e: { preventDefault: () => void }) => {
+  const handleLogin = async (e: { preventDefault: () => void }) => {
     e.preventDefault();
+
+    const response = await fetch("/api/login", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ username, password }),
+    });
+
+    if (response.status === 200) {
+        let accountToken = await response.text(); 
+        localStorage.setItem("token", accountToken);
+        window.location.href = "/";
+    } else if (response.status === 401) {
+      setError("Invalid username or password");
+    } else if (response.status === 500) {
+      setError("An error occurred while logging in");
+    } else {
+      setError("An error occurred");
+    }
   };
 
   return (

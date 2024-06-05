@@ -8,9 +8,26 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
+
+    const response = await fetch("/api/register", {
+      method: "POST",
+      headers: {
+        "Content-type": "application/json"
+      },
+      body: JSON.stringify({ username: username, password: password })
+    });
+
+    if(response.status == 200) {
+      // make them relogin after register
+        window.location.href = "/login";
+    } else {
+      setError("An error occured.");
+    }
   };
+
+  
 
   return (
     <main>

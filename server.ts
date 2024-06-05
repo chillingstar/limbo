@@ -1,3 +1,5 @@
+const settings = require("./settings.json");
+
 const express = require("express");
 const next = require("next");
 const http = require("http");
@@ -7,12 +9,25 @@ const dev = process.env.NODE_ENV !== "production";
 const nextApp = next({ dev });
 const handle = nextApp.getRequestHandler();
 
-const mongoose = require("mongoose");
+const sha256 = require('sha256');
+const crypto = require('node:crypto');
 
-mongoose.connect("mongodb://localhost:27017/test", {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+import * as mongoose from "mongoose";
+
+mongoose.connect(settings.mongoURI, {});
+
+const api = express()
+api.use(express.json())
+
+api.get('/api/login', (req, res) => {
+  const data = req.body;
+
+  let username = data.username;
+  let password = data.password;
+
+  let passwordHash = crypto.hash('sha256', (crypto.hash('sha512', password)));
+  let originalUserPasswordHash = mongoose
+})
 
 nextApp.prepare().then(() => {
   const app = express();
@@ -41,7 +56,7 @@ nextApp.prepare().then(() => {
 
   app.all("*", (req, res) => handle(req, res));
 
-  let port = 80;
+  let port = 2121;
 
   server.listen(port, (err) => {
     if (err) throw err;
