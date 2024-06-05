@@ -9,25 +9,72 @@ const dev = process.env.NODE_ENV !== "production";
 const nextApp = next({ dev });
 const handle = nextApp.getRequestHandler();
 
-const sha256 = require('sha256');
-const crypto = require('node:crypto');
-
-import * as mongoose from "mongoose";
+const crypt = require('node:crypto');
+const mongoose = require('mongoose');
 
 mongoose.connect(settings.mongoURI, {});
 
 const api = express()
 api.use(express.json())
 
-api.get('/api/login', (req, res) => {
+const Account = mongoose.model('account', new mongoose.Schema({
+  username: String,
+  passwordHash: String,
+  token: String,
+  isAdmin: Boolean,
+}))
+
+api.post('/api/login', async (req, res) => {
   const data = req.body;
 
   let username = data.username;
   let password = data.password;
 
-  let passwordHash = crypto.hash('sha256', (crypto.hash('sha512', password)));
-  // let originalUserPasswordHash = mongoose
-})
+  let passwordHash = crypt.hash('sha256', (crypt.hash('sha512', password)));
+  
+  let account = await Account.findOne({ username: username });
+
+  if (passwordHash === account.passwordHash.toString()) {
+    if (account.token === null) {
+      let token = crypt.generateBytes(128).digest('hex');
+      account.token = token;
+      account.save();
+      res.status(200).json({ token: token });
+    } else {
+      res.status(200).json({ token: account.token });
+    }
+  } else {
+    res.status(401).send('Invalid username or password');
+  }
+});
+
+api.post('/api/register', async (req, res) => {
+  const data = req.body;
+
+  console.log(data);
+
+  let username = data.username;
+  let password = data.password;
+
+  if (new RegExp("^(([A-Za-z0-9]){3,16})+$").test(username)){
+    if (await Account.findOne({ username: username})) {
+      res.status(409).send('Username already exists');
+    } else {
+      let passwordHash = crypt.hash('sha256', (crypt.hash('sha512', password)));
+      let account = new Account({
+        username: username,
+        passwordHash: passwordHash,
+        token: null,
+        isAdmin: false,
+      });
+      account.save();
+      res.status(201).send('Account created');
+    }
+  } else {
+    res.status(400).send("Username must be 3-16 characters long and contain only letters and numbers");
+  }
+  
+});
 
 nextApp.prepare().then(() => {
   const app = express();
