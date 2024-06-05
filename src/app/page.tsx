@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { socket } from "../socket";
+import { socket } from "@/socket";
 
 export default function Home() {
   const [isConnected, setIsConnected] = useState(false);
-  const [transport, setTransport] = useState("N/A");
+  const [, setTransport] = useState("N/A");
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState("");
 
@@ -22,10 +22,19 @@ export default function Home() {
         setTransport(transport.name);
       });
 
-      socket.on("message", (message) => {
+      socket.on("message", (receivedMessage) => {
+        if (receivedMessage !== `You: ${message}`) {
+          setMessages((prevMessages) => [
+            ...prevMessages,
+            `Anonymous: ${receivedMessage}`,
+          ]);
+        }
+      });
+
+      socket.on("announcement", (message) => {
         setMessages((prevMessages) => [
           ...prevMessages,
-          `Anonymous: ${message}`,
+          `<strong style="color: red">System</strong>: ${message}`,
         ]);
       });
     }
@@ -42,15 +51,16 @@ export default function Home() {
       socket.off("connect", onConnect);
       socket.off("disconnect", onDisconnect);
       socket.off("message");
+      socket.off("announcement"); // Add this line
     };
-  }, []);
+  }, [message]);
 
-  const handleMessageSubmit = (e) => {
+  const handleMessageSubmit = (e: { preventDefault: () => void }) => {
     e.preventDefault();
     if (message) {
       console.log(`Emitting message: ${message}`); // Add this line
       socket.emit("message", message);
-      socket.emit("log", message);
+      setMessages((prevMessages) => [...prevMessages, `You: ${message}`]);
       setMessage("");
     }
   };
