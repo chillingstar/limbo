@@ -10,20 +10,25 @@ export default function Register() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
-
-    const response = await fetch("/api/register", {
-      method: "POST",
-      headers: {
-        "Content-type": "application/json"
-      },
-      body: JSON.stringify({ username: username, password: password })
-    });
-
-    if(response.status == 200) {
-      // make them relogin after register
+  
+    try {
+      const response = await fetch("http://localhost:2122/api/register", {
+        method: "POST",
+        headers: {
+          "Content-type": "application/json"
+        },
+        body: JSON.stringify({ username: username, password: password })
+      });
+  
+      if(response.status == 200) {
+        // make them relogin after register
         window.location.href = "/login";
-    } else {
-      setError("An error occured.");
+      } else {
+        setError("An error occured.");
+      }
+    } catch (error) {
+      console.error('Failed to fetch:', error);
+      setError("An error occured while trying to connect to the server.");
     }
   };
 
