@@ -22,10 +22,14 @@ api.use(cors({
 }));
 api.use(express.json())
 
-mongoose.connect(settings.MongoDB.url, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-})
+async function ConnectMongoDB() {
+    await mongoose.connect(settings.MongoDB.url, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true
+    });
+}
+
+ConnectMongoDB();
 
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));

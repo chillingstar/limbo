@@ -1,8 +1,5 @@
 {
-    "MySQL": {
-        "host": "",
-        "user": "",
-        "password": "", 
-        "database": ""
+    "MongoDB": {
+        "url": ""
     }
 }
