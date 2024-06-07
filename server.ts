@@ -54,6 +54,7 @@ api.post('/api/login', async (req, res) => {
         res.status(400).send("Username must be 3-16 characters long and contain only letters and numbers");
         return;
     }
+
     let password = data.password;
     if (!new RegExp("^([A-Za-z0-9])+$").test(password)) {
         res.status(400).send("Password must contain only letters and numbers");
@@ -87,6 +88,7 @@ api.post('/api/register', async (req, res) => {
 
     let username = data.username;
     let password = data.password;
+
     if (!new RegExp("^([A-Za-z0-9])+$").test(password)) {
         res.status(400).send("Password must contain only letters and numbers");
         return;
@@ -130,13 +132,21 @@ nextApp.prepare().then(() => {
                 socket.emit('announcement', 'Invalid message received');
                 return;
             }
-
-            let token = JSON.parse(message.token).token;
-            let content = message.message;
+            try {
+                var token = JSON.parse(message.token).token;
+            } catch {
+                io.emit('error', JSON.stringify({ logout: true }));
+                return;
+            }
+            let content = message.message.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
             try {
                 let account = await Account.findOne({ token: token });
-                io.emit('message', `${account.username}: ${content}`);
+                if(account){
+                    io.emit('message', `${account.username}: ${content}`);
+                } else {
+                    io.emit('error', JSON.stringify({ logout: true }));
+                }
             } catch (error) {
                 console.error('Error executing query:', error);
             }

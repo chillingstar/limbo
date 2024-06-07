@@ -11,7 +11,7 @@ export default function Login() {
     e.preventDefault();
 
     try {
-      const response = await fetch("https://"+document.domain+":2122/api/login", {
+      const response = await fetch(window.location.origin.replace(":2121", ":2122")+"/api/login", {
         method: "POST",
         headers: {
           "content-type": "application/json",

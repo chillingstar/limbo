@@ -12,7 +12,7 @@ export default function Register() {
     e.preventDefault();
   
     try {
-      const response = await fetch("https://"+document.domain+":2122/api/register", {
+      const response = await fetch(window.location.origin.replace(":2121", ":2122")+"/api/register", {
         method: "POST",
         headers: {
           "Content-type": "application/json"

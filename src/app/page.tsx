@@ -40,6 +40,14 @@ export default function Home() {
                     `<strong style="color: red">System</strong>: ${message}`,
                 ]);
             });
+
+            socket.on("error", (data) => {
+                data = JSON.parse(data);
+                if(data.logout){
+                    localStorage.removeItem("token");
+                    window.location.href = "./login";
+                }
+            })
         }
 
         function onDisconnect() {
@@ -55,6 +63,7 @@ export default function Home() {
             socket.off("disconnect", onDisconnect);
             socket.off("message");
             socket.off("announcement"); // Add this line
+            socket.off("error");
         };
     }, [message]);
 
@@ -64,13 +73,14 @@ export default function Home() {
             if (!localStorage.getItem("token")) {
                 alert("You must be logged in to send messages");
                 window.location.href = "./login";
+                return;
             }
             console.log(`Sending: ${message}`);
             socket.emit("message", {
                 token: localStorage.getItem("token"),
                 message: message
             });
-            setMessages((prevMessages) => [...prevMessages, `You: ${message}`]);
+            /*setMessages((prevMessages) => [...prevMessages, `You: ${message}`]); Currently useless, just spams us. Maybe we will deal with this later?*/
             setMessage("");
         }
     };
