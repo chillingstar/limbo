@@ -12,7 +12,7 @@ export default function Register() {
     e.preventDefault();
   
     try {
-      const response = await fetch(window.location.origin.replace(":2121", ":2122")+"/api/register", {
+      const response = await fetch(window.location.origin.replace((process.env.SERVER_PORT || 80).toString(), (process.env.API_PORT || 2323).toString())+"/api/register", {
         method: "POST",
         headers: {
           "Content-type": "application/json"

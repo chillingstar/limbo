@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -11,7 +14,7 @@ export default function Login() {
     e.preventDefault();
 
     try {
-      const response = await fetch(window.location.origin.replace(":2121", ":2122")+"/api/login", {
+      const response = await fetch(window.location.origin.replace((process.env.SERVER_PORT || 80).toString(), (process.env.API_PORT || 2323).toString())+"/api/login", {
         method: "POST",
         headers: {
           "content-type": "application/json",
