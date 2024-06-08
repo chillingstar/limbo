@@ -21,7 +21,7 @@ const nodeCrypto = require("node:crypto");
 
 const api = express();
 
-let pool;
+let pool, Account;
 
 api.use(
   cors({
@@ -65,7 +65,10 @@ switch ((process.env.DATABASE).toLowerCase()) {
       isAdmin: Boolean,
     });
 
-    const Account = mongoose.model("Account", accountSchema);
+    const AccountModel = mongoose.model("Account", accountSchema);
+    if (process.env.DATABASE.toLowerCase() === "mongodb") {
+      Account = AccountModel;
+    }
 
     api.post("/api/login", async (req, res) => {
       const data = req.body;
@@ -298,7 +301,7 @@ nextApp.prepare().then(() => {
 
       try {
         if (process.env.DATABASE === "mongodb") {
-          var account = await account.findOne({ token });
+          var account = await Account.findOne({ token });
         } else {
           var [rows] = await pool.query(
             "SELECT * FROM account WHERE token = ?",

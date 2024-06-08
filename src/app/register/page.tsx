@@ -12,14 +12,14 @@ export default function Register() {
     e.preventDefault();
   
     try {
-      const response = await fetch(window.location.origin.replace((process.env.SERVER_PORT || 80).toString(), (process.env.API_PORT || 2323).toString())+"/api/register", {
+      const response = await fetch(window.location.origin.replace((process.env.SERVER_PORT || 80).toString(), (process.env.API_PORT || 2323).toString())+"/api/register", { 
         method: "POST",
         headers: {
           "Content-type": "application/json"
         },
         body: JSON.stringify({ username: username, password: password })
       });
-  
+
       if(response.status == 200) {
         // make them relogin after register
         window.location.href = "/login";
@@ -32,7 +32,14 @@ export default function Register() {
     }
   };
 
-  
+  const checkUsername = async (username) => {
+
+    if (!new RegExp("^(([A-Za-z0-9]){3,16})+$").test(username)){
+      setError("Username must be alphanumberic.");
+    } else {
+      setError("");
+    }
+  }
 
   return (
     <main>
@@ -52,6 +59,7 @@ export default function Register() {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
+                onInput={(e) => checkUsername(e.currentTarget.value)}
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
               />
             </div>
