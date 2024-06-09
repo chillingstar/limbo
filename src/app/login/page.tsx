@@ -16,8 +16,8 @@ export default function Login() {
     e.preventDefault();
 
     try {
-      const response = await fetch(window.location.origin.replace((process.env.SERVER_PORT || 80).toString(), (process.env.API_PORT || 2323).toString())+"/api/login", {
-      method: "POST",
+      const response = await fetch("/api/login", {
+        method: "POST",
         headers: {
           "content-type": "application/json",
         },
@@ -32,8 +32,10 @@ export default function Login() {
         setError("Invalid username or password");
       } else if (response.status === 500) {
         setError("An error occurred while logging in");
+      } else if (response.status === 403) {
+        setError("You are banned from the server.");
       } else {
-        setError("An error occurred");
+        setError("An error occurred while logging in");
       }
     } catch (error) {
       setError("An error occurred while logging in");
@@ -83,7 +85,12 @@ export default function Login() {
               Login
             </button>
             {error && <p className="text-red-500 text-sm">{error}</p>}
-            <a href="/register" className="text-sm text-indigo-600 hover:underline">Does not have an account? Sign up</a>
+            <a
+              href="/register"
+              className="text-sm text-indigo-600 hover:underline"
+            >
+              Does not have an account? Sign up
+            </a>
           </form>
         </div>
       </div>

@@ -10,9 +10,18 @@ export default function Home() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    if (socket.connected) {
-      onConnect();
+    if (!localStorage.getItem("token")) {
+      window.location.href = "./login";
+      return;
     }
+
+    socket.emit("checkToken", localStorage.getItem("token"), (data) => {
+      if (data.error) {
+        alert(data.error);
+        localStorage.removeItem("token");
+        window.location.href = "./login";
+      }
+    });
 
     function onConnect() {
       setIsConnected(true);
@@ -41,8 +50,21 @@ export default function Home() {
         ]);
       });
 
+      socket.on("adminMessage", (receivedMessage) => {
+        let [username, ...messageParts] = receivedMessage.split(": ");
+        let message = messageParts.join(": ");
+
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          `<strong style="color: red">ADMIN</strong> ${username}: ${message}`,
+        ]);
+      })
+
       socket.on("error", (data) => {
         data = JSON.parse(data);
+        if (data.message) {
+          alert(data.message);
+        }
         if (data.logout) {
           localStorage.removeItem("token");
           window.location.href = "./login";
@@ -59,10 +81,11 @@ export default function Home() {
     socket.on("disconnect", onDisconnect);
 
     return () => {
-      socket.off("connect", onConnect);
-      socket.off("disconnect", onDisconnect);
+      socket.off("connect");
+      socket.off("disconnect");
       socket.off("message");
-      socket.off("announcement"); // Add this line
+      socket.off("adminMessage");
+      socket.off("announcement");
       socket.off("error");
     };
   }, [message]);
@@ -71,7 +94,6 @@ export default function Home() {
     e.preventDefault();
     if (message) {
       if (!localStorage.getItem("token")) {
-        alert("You must be logged in to send messages");
         window.location.href = "./login";
         return;
       }
@@ -80,66 +102,36 @@ export default function Home() {
         token: localStorage.getItem("token"),
         message: message,
       });
-      /*setMessages((prevMessages) => [...prevMessages, `You: ${message}`]); Currently useless, just spams us. Maybe we will deal with this later?*/
       setMessage("");
     }
   };
 
   return (
-    <main>
+    <main className="flex flex-col items-center justify-center">
       <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          width: "100vw",
-          height: "35px",
-          backgroundColor: isConnected ? "green" : "red",
-          borderRadius: "5px",
-        }}
+        className={`flex flex-col items-center justify-center w-screen h-9 rounded ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}
       >
-        <p style={{ color: "white" }}>
+        <p className="text-white">
           {isConnected ? `Connected` : "Disconnected"}
         </p>
       </div>
       <div
-        style={{
-          display: "flex",
-          border: "1px solid white",
-          width: "100vw",
-          height: "calc(100vh - 80px)",
-          borderRadius: "20px",
-          margin: "auto",
-          flexDirection: "column",
-          justifyContent: "flex-end",
-          padding: "20px",
-          backgroundColor: "rgba(255, 255, 255, 0.1)",
-          overflowY: "scroll",
-        }}
+        className="flex flex-col justify-end w-screen h-screen border border-white rounded-2xl m-auto p-5 bg-white bg-opacity-10 overflow-y-scroll"
+        style={{ height: "calc(100vh - 80px)" }}
       >
         {messages.map((message, index) => (
           <div
             key={index}
-            style={{ marginBottom: "10px" }}
+            className="mb-2"
             dangerouslySetInnerHTML={{ __html: message }}
           />
         ))}
       </div>
       <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          width: "100vw",
-          height: "45px",
-          backgroundColor: "rgba(255, 255, 255, 0.1)",
-          borderRadius: "5px",
-        }}
+        className="flex flex-col items-center justify-center w-screen h-11 bg-white bg-opacity-10 rounded"
       >
         <form
-          style={{ display: "flex", width: "100%" }}
+          className="flex w-full"
           onSubmit={handleMessageSubmit}
         >
           <input
@@ -147,27 +139,12 @@ export default function Home() {
             placeholder="Type your message here..."
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            style={{
-              width: "calc(100% - 80px)",
-              color: "black",
-              height: "35px",
-              borderRadius: "5px",
-              border: "none",
-              padding: "0 10px",
-            }}
+            className="w-full h-9 rounded-l text-black border-none px-2"
+            style={{ width: "calc(100% - 80px)" }}
           />
           <button
             type="submit"
-            style={{
-              width: "80px",
-              height: "35px",
-              borderRadius: "5px",
-              border: "none",
-              backgroundColor: "blue",
-              color: "white",
-              fontWeight: "bold",
-              cursor: "pointer",
-            }}
+            className="w-20 h-9 rounded-r border-none bg-blue-500 text-white font-bold cursor-pointer"
           >
             Send
           </button>

@@ -10,36 +10,35 @@ export default function Register() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
-  
+
     try {
-      const response = await fetch(window.location.origin.replace((process.env.SERVER_PORT || 80).toString(), (process.env.API_PORT || 2323).toString())+"/api/register", { 
+      const response = await fetch("/api/register", {
         method: "POST",
         headers: {
-          "Content-type": "application/json"
+          "Content-type": "application/json",
         },
-        body: JSON.stringify({ username: username, password: password })
+        body: JSON.stringify({ username: username, password: password }),
       });
 
-      if(response.status == 200) {
+      if (response.status == 200) {
         // make them relogin after register
         window.location.href = "/login";
       } else {
         setError("An error occured.");
       }
     } catch (error) {
-      console.error('Failed to fetch:', error);
+      console.error("Failed to fetch:", error);
       setError("An error occured while trying to connect to the server.");
     }
   };
 
   const checkUsername = async (username) => {
-
-    if (!new RegExp("^(([A-Za-z0-9]){3,16})+$").test(username)){
+    if (!new RegExp("^(([A-Za-z0-9]){3,16})+$").test(username)) {
       setError("Username must be alphanumberic.");
     } else {
       setError("");
     }
-  }
+  };
 
   return (
     <main>

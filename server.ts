@@ -10,29 +10,30 @@ const socketIo = require("socket.io");
 const cors = require("cors");
 
 // Database
-const mysql = require("mysql2");
+const mysql = require("mysql2/promise");
 const mongoose = require("mongoose");
 
 // Initialization
 const dev = process.env.NODE_ENV !== "production";
 const nextApp = next({ dev });
-const handle = nextApp.getRequestHandler();
 const nodeCrypto = require("node:crypto");
+const handle = nextApp.getRequestHandler();
 
-const api = express();
+const app = express();
 
-let pool, Account;
+let pool;
+let Account;
 
-api.use(
+app.use(
   cors({
     origin: "*",
     methods: ["GET", "POST"],
     optionsSuccessStatus: 200,
   })
 );
-api.use(express.json());
+app.use(express.json());
 
-switch ((process.env.DATABASE).toLowerCase()) {
+switch (process.env.DATABASE.toLowerCase()) {
   case "mongodb":
     console.log("Using MongoDB.");
     async function ConnectMongoDB() {
@@ -63,6 +64,7 @@ switch ((process.env.DATABASE).toLowerCase()) {
       passwordHash: String,
       token: String,
       isAdmin: Boolean,
+      isBanned: Boolean,
     });
 
     const AccountModel = mongoose.model("Account", accountSchema);
@@ -70,7 +72,7 @@ switch ((process.env.DATABASE).toLowerCase()) {
       Account = AccountModel;
     }
 
-    api.post("/api/login", async (req, res) => {
+    app.post("/api/login", async (req, res) => {
       const data = req.body;
 
       let username = data.username;
@@ -98,6 +100,11 @@ switch ((process.env.DATABASE).toLowerCase()) {
 
       if (account) {
         if (passwordHash === account.passwordHash) {
+          if (account.isBanned) { 
+            res.status(403).send("You are banned from the server.");
+            return;
+          }
+
           if (account.token === null) {
             let token = nodeCrypto.randomBytes(16).toString("hex");
             account.token = token;
@@ -114,7 +121,7 @@ switch ((process.env.DATABASE).toLowerCase()) {
       }
     });
 
-    api.post("/api/register", async (req, res) => {
+    app.post("/api/register", async (req, res) => {
       const data = req.body;
 
       let username = data.username;
@@ -156,14 +163,36 @@ switch ((process.env.DATABASE).toLowerCase()) {
     break;
 
   case "mysql":
-    const pool = mysql.createPool({
-      host: process.env.MYSQL_HOST,
-      user: process.env.MYSQL_USER,
-      password: process.env.MYSQL_PASSWORD,
-      database: process.env.MYSQL_DATABASE,
+    console.log("Using MySQL.");
+
+    let connection;
+
+    async function ConnectMySQL() {
+      connection = await mysql.createConnection({
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
+      });
+
+      try {
+        await connection.connect();
+        console.log("Connected to MySQL");
+      } catch (error) {
+        console.error("Error connecting to MySQL:", error);
+      }
+    }
+
+    ConnectMySQL();
+
+    pool = mysql.createPool({
+      host: process.env.DB_HOST,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
     });
 
-    api.post("/api/login", async (req, res) => {
+    app.post("/api/login", async (req, res) => {
       const data = req.body;
 
       let username = data.username;
@@ -185,13 +214,6 @@ switch ((process.env.DATABASE).toLowerCase()) {
         "sha256",
         nodeCrypto.hash("sha512", password)
       );
-
-      const pool = mysql.createPool({
-        host: process.env.MYSQL_HOST,
-        user: process.env.MYSQL_USER,
-        password: process.env.MYSQL_PASSWORD,
-        database: process.env.MYSQL_DATABASE,
-      });
 
       const [rows] = await pool.query(
         "SELECT * FROM account WHERE username = ?",
@@ -220,7 +242,7 @@ switch ((process.env.DATABASE).toLowerCase()) {
       }
     });
 
-    api.post("/api/register", async (req, res) => {
+    app.post("/api/register", async (req, res) => {
       const data = req.body;
 
       let username = data.username;
@@ -243,7 +265,7 @@ switch ((process.env.DATABASE).toLowerCase()) {
             nodeCrypto.hash("sha512", password)
           );
           await pool.query(
-            "INSERT INTO account (username, passwordHash, token, isAdmin) VALUES (?, ?, NULL, FALSE)",
+            "INSERT INTO account (username, passwordHash, token, isAdmin, isBanned) VALUES (?, ?, NULL, FALSE, FALSE)",
             [username, passwordHash]
           );
           res.status(200).send("Account created");
@@ -263,25 +285,43 @@ switch ((process.env.DATABASE).toLowerCase()) {
     break;
 }
 
-api.listen(process.env.API_PORT || 2323, () => {
-  console.log(
-    `> API ready on http://localhost:${process.env.API_PORT || 2323}`
-  );
-});
-
 nextApp.prepare().then(() => {
-  const app = express();
-
   const server = http.createServer(app);
   const io = new socketIo.Server(server);
 
   const onConnection = (socket) => {
+    socket.on("checkToken", async (token) => {
+      let isValid = false;
+      try {
+        let account;
+        if (process.env.DATABASE === "mongodb") {
+          account = await Account.findOne({ token });
+        } else {
+          var [rows] = await pool.query(
+            "SELECT * FROM account WHERE token = ?",
+            [token]
+          );
+          account = rows[0];
+        }
+        if (account) {
+          isValid = true;
+          socket.handshake.auth = { token: account.token };
+        }
+      } catch (error) {
+        console.error("Error executing query:", error);
+      }
+  
+      if (!isValid) {
+        socket.disconnect();
+      } else {
+        socket.emit("tokenCheck", { valid: isValid });
+      }
+    });
+
     console.log(`User ${socket.handshake.address} connected`);
     io.emit("announcement", "An user has connected");
 
     socket.on("message", async (message) => {
-      console.log("Received message:", message); // Log the received message
-
       if (!message || !message.token || !message.message) {
         console.log("Invalid message received:", message);
         socket.emit("announcement", "Invalid message received");
@@ -310,7 +350,50 @@ nextApp.prepare().then(() => {
           var account = rows[0];
         }
         if (account) {
-          io.emit("message", `${account.username}: ${content}`);
+          if (account.isAdmin) {
+            io.emit("adminMessage", `${account.username}: ${content}`);
+
+            if (content.startsWith("?ban")) {
+              let username = content.split(" ")[1];
+              if (username) {
+                if (process.env.DATABASE === "mongodb") {
+                  let target = await Account.findOne({ username: username });
+                  if (target.isAdmin) {
+                    socket.emit("announcement", "You cannot ban another admin");
+                    return;
+                  }
+                  await Account.updateOne({ username: username }, { isBanned: true });
+                } else {
+                  await pool.query("UPDATE account SET isBanned = TRUE WHERE username = ?", [username]);
+                }
+
+                io.emit("announcement", `${username} has been banned by admin ${account.username}`);
+
+                let target = io.sockets.sockets.find((socket) => socket.handshake.auth.token === username);
+                if (target) {
+                  target.emit("error", JSON.stringify({ message: `You have been banned by Admin ${account.username}`, logout: true }));
+                }
+              } else {
+                socket.emit("announcement", "Invalid target, or arguments.");
+              }
+            } else if (content.startsWith("?unban")) {
+              let username = content.split(" ")[1];
+              if (username) {
+                if (process.env.DATABASE === "mongodb") {
+                  await Account.updateOne({ username: username }, { isBanned: false });
+                }
+                else {
+                  await pool.query("UPDATE account SET isBanned = FALSE WHERE username = ?", [username]);
+                }
+                io.emit("announcement", `${username} has been forgiven by admin ${account.username}`);
+              }
+              else {
+                socket.io.emit("announcement", "Invalid target, or arguments.");
+              }
+            }
+          } else {
+            io.emit("message", `${account.username}: ${content}`);
+          }
         } else {
           io.emit("error", JSON.stringify({ logout: true }));
         }
