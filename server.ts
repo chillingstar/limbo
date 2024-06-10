@@ -72,10 +72,30 @@ switch (process.env.DATABASE.toLowerCase()) {
       Account = AccountModel;
     }
 
+    app.post("/api/checktoken", async (req, res) => {
+      console.log(`Token check from ${req.ip}`);
+      const data = req.body;
+      let token = data.token;
+
+      if (!token) {
+        res.status(400).send("No token provided");
+        return;
+      }
+
+      let account = await Account.findOne({ token: token });
+
+      if (account) {
+        res.status(200).send("Token is valid");
+      } else {
+        res.status(401).send("Token is invalid");
+      }
+    });
+
     app.post("/api/login", async (req, res) => {
       const data = req.body;
-
       let username = data.username;
+
+      console.log(`Login request from ${req.ip} as ${username}`);
       if (!new RegExp("^(([A-Za-z0-9]){3,16})+$").test(username)) {
         res
           .status(400)
@@ -126,6 +146,7 @@ switch (process.env.DATABASE.toLowerCase()) {
 
       let username = data.username;
       let password = data.password;
+      console.log(`Register request from ${req.ip} as ${username}`);
 
       if (!new RegExp("^([A-Za-z0-9])+$").test(password)) {
         res.status(400).send("Password must contain only letters and numbers");
@@ -192,10 +213,33 @@ switch (process.env.DATABASE.toLowerCase()) {
       database: process.env.DB_NAME,
     });
 
+    app.post("/api/checktoken", async (req, res) => {
+      console.log(`Token check from ${req.ip}`);
+      const token = req.body;
+
+      if (!token) {
+        res.status(400).send("No token provided");
+        return;
+      }
+
+      const [rows] = await pool.query(
+        `SELECT username FROM account WHERE token = "${token}";`
+      );
+
+      console.log(rows);
+
+      if (rows.length > 0) {
+        res.status(200).json({ message: "Token is valid" });
+      } else {
+        res.status(401).json({ message: "Token is invalid" });
+      }
+    });
+
     app.post("/api/login", async (req, res) => {
       const data = req.body;
-
       let username = data.username;
+
+      console.log(`Login request from ${req.ip} as ${username}`);
       if (!new RegExp("^(([A-Za-z0-9]){3,16})+$").test(username)) {
         res
           .status(400)
@@ -247,6 +291,8 @@ switch (process.env.DATABASE.toLowerCase()) {
 
       let username = data.username;
       let password = data.password;
+
+      console.log(`Register request from ${req.ip} as ${username}`);
       if (!new RegExp("^([A-Za-z0-9])+$").test(password)) {
         res.status(400).send("Password must contain only letters and numbers");
         return;
@@ -290,41 +336,29 @@ nextApp.prepare().then(() => {
   const io = new socketIo.Server(server);
 
   const onConnection = (socket) => {
-    socket.on("checkToken", async (token) => {
-      let isValid = false;
+    console.log(`User ${socket.handshake.address} connected`);
+    
+    socket.on("connectionPing", async (token) => {
       try {
-        let account;
         if (process.env.DATABASE === "mongodb") {
-          account = await Account.findOne({ token });
-        } else {
-          var [rows] = await pool.query(
-            "SELECT * FROM account WHERE token = ?",
-            [token]
-          );
-          account = rows[0];
+          var account = await Account.findOne({ token });
+        }
+        else {
+          var [rows] = await pool.query("SELECT * FROM account WHERE token = ?", [token]);
+          var account = rows[0];
         }
         if (account) {
-          isValid = true;
-          socket.handshake.auth = { token: account.token };
+          io.emit("announcement", `${account.username} has connected!`);
         }
       } catch (error) {
         console.error("Error executing query:", error);
       }
-  
-      if (!isValid) {
-        socket.disconnect();
-      } else {
-        socket.emit("tokenCheck", { valid: isValid });
-      }
-    });
-
-    console.log(`User ${socket.handshake.address} connected`);
-    io.emit("announcement", "An user has connected");
+    })
 
     socket.on("message", async (message) => {
       if (!message || !message.token || !message.message) {
         console.log("Invalid message received:", message);
-        socket.emit("announcement", "Invalid message received");
+        socket.emit("announcement", "Invalid message/token received");
         return;
       }
       try {
@@ -402,9 +436,15 @@ nextApp.prepare().then(() => {
       }
     });
 
-    socket.on("disconnect", () => {
+    socket.on("disconnect", async (token) => {
       console.log(`User ${socket.handshake.address} disconnected`);
-      io.emit("announcement", "An user has disconnected");
+      if (process.env.DATABASE === "mongodb") {
+        var account = await Account.findOne({ token });
+      } else {
+        var [rows] = await pool.query("SELECT * FROM account WHERE token = ?", [token]);
+        var account = rows[0];
+      }
+      io.emit("announcement", `User ${account} has disconnected`);
     });
   };
 

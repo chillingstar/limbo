@@ -9,21 +9,29 @@ export default function Home() {
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState("");
 
-  useEffect(() => {
+  useEffect(() => { 
     if (!localStorage.getItem("token")) {
       window.location.href = "./login";
       return;
     }
 
-    socket.emit("checkToken", localStorage.getItem("token"), (data) => {
-      if (data.error) {
-        alert(data.error);
-        localStorage.removeItem("token");
-        window.location.href = "./login";
-      }
-    });
+    if (socket.connected) {
+      onConnect();
+    } else {
+      onDisconnect();
+    }
+
+    function onDisconnect() {
+      console.log("Disconnected from server");
+      setIsConnected(false);
+      setTransport("N/A");
+    }
 
     function onConnect() {
+      socket.emit("connectionPing", {
+        token: localStorage.getItem("token"),
+      });
+
       setIsConnected(true);
       setTransport(socket.io.engine.transport.name);
 
@@ -56,9 +64,9 @@ export default function Home() {
 
         setMessages((prevMessages) => [
           ...prevMessages,
-          `<strong style="color: red">ADMIN</strong> ${username}: ${message}`,
+          `<strong style="color: red">Admin</strong> ${username}: ${message}`,
         ]);
-      })
+      });
 
       socket.on("error", (data) => {
         data = JSON.parse(data);
@@ -72,17 +80,12 @@ export default function Home() {
       });
     }
 
-    function onDisconnect() {
-      setIsConnected(false);
-      setTransport("N/A");
-    }
-
     socket.on("connect", onConnect);
     socket.on("disconnect", onDisconnect);
 
     return () => {
-      socket.off("connect");
-      socket.off("disconnect");
+      socket.off("connect", onConnect);
+      socket.off("disconnect", onDisconnect);
       socket.off("message");
       socket.off("adminMessage");
       socket.off("announcement");
@@ -106,10 +109,28 @@ export default function Home() {
     }
   };
 
+  fetch("/api/checktoken", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: localStorage.getItem("token"),
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      if (data.error) {
+        alert(data.error);
+        localStorage.removeItem("token");
+        window.location.href = "./login";
+      }
+  });
+
   return (
     <main className="flex flex-col items-center justify-center">
       <div
-        className={`flex flex-col items-center justify-center w-screen h-9 rounded ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}
+        className={`flex flex-col items-center justify-center w-screen h-9 rounded ${
+          isConnected ? "bg-green-500" : "bg-red-500"
+        }`}
       >
         <p className="text-white">
           {isConnected ? `Connected` : "Disconnected"}
@@ -127,13 +148,8 @@ export default function Home() {
           />
         ))}
       </div>
-      <div
-        className="flex flex-col items-center justify-center w-screen h-11 bg-white bg-opacity-10 rounded"
-      >
-        <form
-          className="flex w-full"
-          onSubmit={handleMessageSubmit}
-        >
+      <div className="flex flex-col items-center justify-center w-screen h-11 bg-white bg-opacity-10 rounded">
+        <form className="flex w-full" onSubmit={handleMessageSubmit}>
           <input
             type="text"
             placeholder="Type your message here..."
