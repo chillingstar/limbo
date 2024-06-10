@@ -109,21 +109,23 @@ export default function Home() {
     }
   };
 
-  fetch("/api/checktoken", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: localStorage.getItem("token"),
-  })
-    .then((res) => res.json())
-    .then((data) => {
-      if (data.error) {
-        alert(data.error);
-        localStorage.removeItem("token");
-        window.location.href = "./login";
-      }
-  });
+  if (typeof window !== 'undefined') {
+    fetch("/api/checktoken", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: localStorage.getItem("token"),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.error) {
+          alert(data.error);
+          localStorage.removeItem("token");
+          window.location.href = "./login";
+        }
+    });
+  }
 
   return (
     <main className="flex flex-col items-center justify-center">
