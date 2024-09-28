@@ -9,7 +9,7 @@ export default function Home() {
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState("");
 
-  useEffect(() => { 
+  useEffect(() => {
     if (!localStorage.getItem("token")) {
       window.location.href = "./login";
       return;
@@ -58,16 +58,6 @@ export default function Home() {
         ]);
       });
 
-      socket.on("adminMessage", (receivedMessage) => {
-        let [username, ...messageParts] = receivedMessage.split(": ");
-        let message = messageParts.join(": ");
-
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          `<strong style="color: red">Admin</strong> ${username}: ${message}`,
-        ]);
-      });
-
       socket.on("error", (data) => {
         data = JSON.parse(data);
         if (data.message) {
@@ -100,32 +90,31 @@ export default function Home() {
         window.location.href = "./login";
         return;
       }
-      console.log(`Sending: ${message}`);
-      socket.emit("message", {
-        token: localStorage.getItem("token"),
-        message: message,
-      });
-      setMessage("");
+
+      fetch("/api/checktoken", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ token: localStorage.getItem("token") }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.error) {
+            alert(data.error);
+            localStorage.removeItem("token");
+            window.location.href = "./login";
+          } else {
+            console.log(`Sending: ${message}`);
+            socket.emit("message", {
+              token: localStorage.getItem("token"),
+              message: message,
+            });
+            setMessage("");
+          }
+        });
     }
   };
-
-  if (typeof window !== 'undefined') {
-    fetch("/api/checktoken", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: localStorage.getItem("token"),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.error) {
-          alert(data.error);
-          localStorage.removeItem("token");
-          window.location.href = "./login";
-        }
-    });
-  }
 
   return (
     <main className="flex flex-col items-center justify-center">

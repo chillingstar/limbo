@@ -1,359 +1,190 @@
 // DotENV
-const dotenv = require("dotenv");
-dotenv.config();
+import "dotenv/config";
 
 // Express, Next, Socket.IO, etc...
-const express = require("express");
-const next = require("next");
-const http = require("http");
-const socketIo = require("socket.io");
-const cors = require("cors");
+import express from "express";
+import next from "next";
+import http from "http";
+import { Server as socketIo } from "socket.io";
+import cors from "cors";
 
 // Database
-const mysql = require("mysql2/promise");
-const mongoose = require("mongoose");
+import sqlite3 from "sqlite3";
+import { open } from "sqlite";
 
 // Initialization
 const dev = process.env.NODE_ENV !== "production";
 const nextApp = next({ dev });
-const nodeCrypto = require("node:crypto");
+import * as nodeCrypto from "crypto";
 const handle = nextApp.getRequestHandler();
 
 const app = express();
 
-let pool;
-let Account;
+let db;
+(async () => {
+  db = await open({
+    filename: "./database.db",
+    driver: sqlite3.Database,
+  });
+})();
+
+(async () => {
+  db = await open({
+    filename: "./database.db",
+    driver: sqlite3.Database,
+  });
+  await db.exec(`CREATE TABLE IF NOT EXISTS account (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL UNIQUE,
+    passwordHash TEXT NOT NULL,
+    token TEXT
+  )`);
+})();
 
 app.use(
   cors({
     origin: "*",
     methods: ["GET", "POST"],
     optionsSuccessStatus: 200,
-  })
+  }),
 );
 app.use(express.json());
 
-switch (process.env.DATABASE.toLowerCase()) {
-  case "mongodb":
-    console.log("Using MongoDB.");
-    async function ConnectMongoDB() {
-      await mongoose.connect(
-        `mongodb+srv://${encodeURIComponent(
-          process.env.DB_USER
-        )}:${encodeURIComponent(process.env.DB_PASSWORD)}@${
-          process.env.DB_HOST
-        }/?retryWrites=true&w=majority&appName=${process.env.DB_NAME}`,
-        {
-          useNewUrlParser: true,
-          useUnifiedTopology: true,
-        }
+app.post("/api/checktoken", async (req, res) => {
+  const { token } = req.body;
+
+  if (!token) {
+    res.status(400).send("No token provided");
+    return;
+  }
+
+  const account = await db.get(`SELECT username FROM account WHERE token = ?`, [
+    token,
+  ]);
+
+  if (account) {
+    res.status(200).json({ message: "Token is valid" });
+  } else {
+    res.status(401).json({ message: "Token is invalid" });
+  }
+});
+
+app.post("/api/login", async (req, res) => {
+  const data = req.body;
+  let username = data.username;
+
+  console.log(`Login request from ${req.ip} as ${username}`);
+  if (!new RegExp("^(([A-Za-z0-9]){3,16})+$").test(username)) {
+    res
+      .status(400)
+      .send(
+        "Username must be 3-16 characters long and contain only letters and numbers",
       );
+    return;
+  }
+  let password = data.password;
+  if (!new RegExp("^([A-Za-z0-9])+$").test(password)) {
+    res.status(400).send("Password must contain only letters and numbers");
+    return;
+  }
+
+  let passwordHash = nodeCrypto.createHash("sha512").update(password).digest("hex");
+
+  const account = await db.get(`SELECT * FROM account WHERE username = ?`, [
+    username,
+  ]);
+
+  if (account) {
+    if (passwordHash === account.passwordHash) {
+      if (account.token === null) {
+        let token = nodeCrypto.randomBytes(16).toString("hex");
+        await db.run(`UPDATE account SET token = ? WHERE username = ?`, [
+          token,
+          username,
+        ]);
+        res.status(200).json({ token: token });
+      } else {
+        res.status(200).json({ token: account.token });
+      }
+    } else {
+      res.status(401).send("Invalid password");
     }
+  } else {
+    res.status(404).send("Account not found");
+  }
+});
 
-    ConnectMongoDB();
+app.post("/api/register", async (req, res) => {
+  const data = req.body;
 
-    const db = mongoose.connection;
+  let username = data.username;
+  let password = data.password;
 
-    db.on("error", console.error.bind(console, "connection error:"));
-    db.once("open", function () {
-      console.log("Connected to MongoDB");
-    });
+  console.log(`Register request from ${req.ip} as ${username}`);
+  if (!new RegExp("^([A-Za-z0-9])+$").test(password)) {
+    res.status(400).send("Password must contain only letters and numbers");
+    return;
+  }
 
-    const accountSchema = new mongoose.Schema({
-      username: String,
-      passwordHash: String,
-      token: String,
-      isAdmin: Boolean,
-      isBanned: Boolean,
-    });
-
-    const AccountModel = mongoose.model("Account", accountSchema);
-    if (process.env.DATABASE.toLowerCase() === "mongodb") {
-      Account = AccountModel;
+  if (new RegExp("^(([A-Za-z0-9]){3,16})+$").test(username)) {
+    const account = await db.get(`SELECT * FROM account WHERE username = ?`, [
+      username,
+    ]);
+    if (account) {
+      res.status(409).send("Username already exists");
+    } else {
+      let passwordHash = nodeCrypto.createHash("sha512").update(password).digest("hex");
+      await db.run(
+        `INSERT INTO account (username, passwordHash, token) VALUES (?, ?, NULL)`,
+        [username, passwordHash],
+      );
+      res.status(200).send("Account created");
     }
-
-    app.post("/api/checktoken", async (req, res) => {
-      console.log(`Token check from ${req.ip}`);
-      const data = req.body;
-      let token = data.token;
-
-      if (!token) {
-        res.status(400).send("No token provided");
-        return;
-      }
-
-      let account = await Account.findOne({ token: token });
-
-      if (account) {
-        res.status(200).send("Token is valid");
-      } else {
-        res.status(401).send("Token is invalid");
-      }
-    });
-
-    app.post("/api/login", async (req, res) => {
-      const data = req.body;
-      let username = data.username;
-
-      console.log(`Login request from ${req.ip} as ${username}`);
-      if (!new RegExp("^(([A-Za-z0-9]){3,16})+$").test(username)) {
-        res
-          .status(400)
-          .send(
-            "Username must be 3-16 characters long and contain only letters and numbers"
-          );
-        return;
-      }
-
-      let password = data.password;
-      if (!new RegExp("^([A-Za-z0-9])+$").test(password)) {
-        res.status(400).send("Password must contain only letters and numbers");
-        return;
-      }
-
-      let passwordHash = nodeCrypto.hash(
-        "sha256",
-        nodeCrypto.hash("sha512", password)
+  } else {
+    res
+      .status(400)
+      .send(
+        "Username must be 3-16 characters long and contain only letters and numbers",
       );
-
-      let account = await Account.findOne({ username: username });
-
-      if (account) {
-        if (passwordHash === account.passwordHash) {
-          if (account.isBanned) { 
-            res.status(403).send("You are banned from the server.");
-            return;
-          }
-
-          if (account.token === null) {
-            let token = nodeCrypto.randomBytes(16).toString("hex");
-            account.token = token;
-            await account.save();
-            res.status(200).json({ token: token });
-          } else {
-            res.status(200).json({ token: account.token });
-          }
-        } else {
-          res.status(401).send("Invalid password");
-        }
-      } else {
-        res.status(404).send("Account not found");
-      }
-    });
-
-    app.post("/api/register", async (req, res) => {
-      const data = req.body;
-
-      let username = data.username;
-      let password = data.password;
-      console.log(`Register request from ${req.ip} as ${username}`);
-
-      if (!new RegExp("^([A-Za-z0-9])+$").test(password)) {
-        res.status(400).send("Password must contain only letters and numbers");
-        return;
-      }
-
-      if (new RegExp("^(([A-Za-z0-9]){3,16})+$").test(username)) {
-        let account = await Account.findOne({ username: username });
-
-        if (account) {
-          res.status(409).send("Username already exists");
-        } else {
-          let passwordHash = nodeCrypto.hash(
-            "sha256",
-            nodeCrypto.hash("sha512", password)
-          );
-          let newAccount = new Account({
-            username: username,
-            passwordHash: passwordHash,
-            token: null,
-            isAdmin: false,
-          });
-          await newAccount.save();
-          res.status(200).send("Account created");
-        }
-      } else {
-        res
-          .status(400)
-          .send(
-            "Username must be 3-16 characters long and contain only letters and numbers"
-          );
-      }
-    });
-
-    break;
-
-  case "mysql":
-    console.log("Using MySQL.");
-
-    let connection;
-
-    async function ConnectMySQL() {
-      connection = await mysql.createConnection({
-        host: process.env.DB_HOST,
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME,
-      });
-
-      try {
-        await connection.connect();
-        console.log("Connected to MySQL");
-      } catch (error) {
-        console.error("Error connecting to MySQL:", error);
-      }
-    }
-
-    ConnectMySQL();
-
-    pool = mysql.createPool({
-      host: process.env.DB_HOST,
-      user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_NAME,
-    });
-
-    app.post("/api/checktoken", async (req, res) => {
-      console.log(`Token check from ${req.ip}`);
-      const token = req.body;
-
-      if (!token) {
-        res.status(400).send("No token provided");
-        return;
-      }
-
-      const [rows] = await pool.query(
-        `SELECT username FROM account WHERE token = "${token}";`
-      );
-
-      console.log(rows);
-
-      if (rows.length > 0) {
-        res.status(200).json({ message: "Token is valid" });
-      } else {
-        res.status(401).json({ message: "Token is invalid" });
-      }
-    });
-
-    app.post("/api/login", async (req, res) => {
-      const data = req.body;
-      let username = data.username;
-
-      console.log(`Login request from ${req.ip} as ${username}`);
-      if (!new RegExp("^(([A-Za-z0-9]){3,16})+$").test(username)) {
-        res
-          .status(400)
-          .send(
-            "Username must be 3-16 characters long and contain only letters and numbers"
-          );
-        return;
-      }
-      let password = data.password;
-      if (!new RegExp("^([A-Za-z0-9])+$").test(password)) {
-        res.status(400).send("Password must contain only letters and numbers");
-        return;
-      }
-
-      let passwordHash = nodeCrypto.hash(
-        "sha256",
-        nodeCrypto.hash("sha512", password)
-      );
-
-      const [rows] = await pool.query(
-        "SELECT * FROM account WHERE username = ?",
-        [username]
-      );
-
-      if (rows.length > 0) {
-        let account = rows[0];
-
-        if (passwordHash === account.passwordHash) {
-          if (account.token === null) {
-            let token = nodeCrypto.randomBytes(16).toString("hex");
-            await pool.query(
-              "UPDATE account SET token = ? WHERE username = ?",
-              [token, username]
-            );
-            res.status(200).json({ token: token });
-          } else {
-            res.status(200).json({ token: account.token });
-          }
-        } else {
-          res.status(401).send("Invalid password");
-        }
-      } else {
-        res.status(404).send("Account not found");
-      }
-    });
-
-    app.post("/api/register", async (req, res) => {
-      const data = req.body;
-
-      let username = data.username;
-      let password = data.password;
-
-      console.log(`Register request from ${req.ip} as ${username}`);
-      if (!new RegExp("^([A-Za-z0-9])+$").test(password)) {
-        res.status(400).send("Password must contain only letters and numbers");
-        return;
-      }
-
-      if (new RegExp("^(([A-Za-z0-9]){3,16})+$").test(username)) {
-        const [rows] = await pool.query(
-          "SELECT * FROM account WHERE username = ?",
-          [username]
-        );
-        if (rows.length > 0) {
-          res.status(409).send("Username already exists");
-        } else {
-          let passwordHash = nodeCrypto.hash(
-            "sha256",
-            nodeCrypto.hash("sha512", password)
-          );
-          await pool.query(
-            "INSERT INTO account (username, passwordHash, token, isAdmin, isBanned) VALUES (?, ?, NULL, FALSE, FALSE)",
-            [username, passwordHash]
-          );
-          res.status(200).send("Account created");
-        }
-      } else {
-        res
-          .status(400)
-          .send(
-            "Username must be 3-16 characters long and contain only letters and numbers"
-          );
-      }
-    });
-    break;
-  default:
-    console.error("Invalid database selected");
-    process.exit(1);
-    break;
-}
+  }
+});
 
 nextApp.prepare().then(() => {
   const server = http.createServer(app);
-  const io = new socketIo.Server(server);
+  const io = new socketIo(server);
 
+  /**
+   * Handles a new socket connection.
+   *
+   * @param socket - The socket instance representing the connection.
+   *
+   * This function sets up event listeners for the following events:
+   * - "connectionPing": Verifies the provided token and announces the connection if valid.
+   * - "message": Validates and sanitizes incoming messages, then broadcasts them if the token is valid.
+   *
+   * Events:
+   * - "connectionPing": Expects a token and verifies it against the database. If valid, announces the connection.
+   * - "message": Expects an object with `token` and `message` properties. Validates and sanitizes the message, then broadcasts it if the token is valid.
+   *
+   * Error Handling:
+   * - Logs any errors encountered during database queries.
+   * - Emits an error event if the token is invalid or if there are issues parsing the token.
+   */
   const onConnection = (socket) => {
     console.log(`User ${socket.handshake.address} connected`);
-    
+
     socket.on("connectionPing", async (token) => {
       try {
-        if (process.env.DATABASE === "mongodb") {
-          var account = await Account.findOne({ token });
-        }
-        else {
-          var [rows] = await pool.query("SELECT * FROM account WHERE token = ?", [token]);
-          var account = rows[0];
-        }
+        const account = await db.get(`SELECT * FROM account WHERE token = ?`, [
+          token,
+        ]);
         if (account) {
           io.emit("announcement", `${account.username} has connected!`);
         }
       } catch (error) {
         console.error("Error executing query:", error);
       }
-    })
+    });
 
     socket.on("message", async (message) => {
       if (!message || !message.token || !message.message) {
@@ -374,77 +205,17 @@ nextApp.prepare().then(() => {
         .replace(/"/g, "&quot;");
 
       try {
-        if (process.env.DATABASE === "mongodb") {
-          var account = await Account.findOne({ token });
-        } else {
-          var [rows] = await pool.query(
-            "SELECT * FROM account WHERE token = ?",
-            [token]
-          );
-          var account = rows[0];
-        }
+        const account = await db.get(`SELECT * FROM account WHERE token = ?`, [
+          token,
+        ]);
         if (account) {
-          if (account.isAdmin) {
-            io.emit("adminMessage", `${account.username}: ${content}`);
-
-            if (content.startsWith("?ban")) {
-              let username = content.split(" ")[1];
-              if (username) {
-                if (process.env.DATABASE === "mongodb") {
-                  let target = await Account.findOne({ username: username });
-                  if (target.isAdmin) {
-                    socket.emit("announcement", "You cannot ban another admin");
-                    return;
-                  }
-                  await Account.updateOne({ username: username }, { isBanned: true });
-                } else {
-                  await pool.query("UPDATE account SET isBanned = TRUE WHERE username = ?", [username]);
-                }
-
-                io.emit("announcement", `${username} has been banned by admin ${account.username}`);
-
-                let target = io.sockets.sockets.find((socket) => socket.handshake.auth.token === username);
-                if (target) {
-                  target.emit("error", JSON.stringify({ message: `You have been banned by Admin ${account.username}`, logout: true }));
-                }
-              } else {
-                socket.emit("announcement", "Invalid target, or arguments.");
-              }
-            } else if (content.startsWith("?unban")) {
-              let username = content.split(" ")[1];
-              if (username) {
-                if (process.env.DATABASE === "mongodb") {
-                  await Account.updateOne({ username: username }, { isBanned: false });
-                }
-                else {
-                  await pool.query("UPDATE account SET isBanned = FALSE WHERE username = ?", [username]);
-                }
-                io.emit("announcement", `${username} has been forgiven by admin ${account.username}`);
-              }
-              else {
-                socket.io.emit("announcement", "Invalid target, or arguments.");
-              }
-            }
-          } else {
-            io.emit("message", `${account.username}: ${content}`);
-          }
+          io.emit("message", `${account.username}: ${content}`);
         } else {
           io.emit("error", JSON.stringify({ logout: true }));
         }
       } catch (error) {
         console.error("Error executing query:", error);
       }
-    });
-
-    socket.on("disconnect", async (token) => {
-      console.log(`User ${socket.handshake.address} disconnected`);
-      if (process.env.DATABASE === "mongodb") {
-        var account = await Account.findOne({ token });
-      } else {
-        var [rows] = await pool.query("SELECT * FROM account WHERE token = ?", [token]);
-        var account = rows[0];
-      }
-      io.emit("announcement", `User ${account} has disconnected`);
     });
   };
 
@@ -454,8 +225,7 @@ nextApp.prepare().then(() => {
 
   let port = process.env.SERVER_PORT || 80;
 
-  server.listen(port, (err) => {
-    if (err) throw err;
+  server.listen(port, () => {
     console.log(`> Ready on http://localhost:${port}`);
   });
 

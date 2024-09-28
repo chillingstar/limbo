@@ -12,8 +12,6 @@
     "dotenv": "^16.4.5",
     "events": "^3.3.0",
     "express": "^4.19.2",
-    "mongoose": "^8.4.1",
-    "mysql2": "^3.10.0",
     "net": "^1.0.2",
     "next": "14.2.3",
     "react": "^18",
@@ -21,7 +19,9 @@
     "readable-stream": "^4.5.2",
     "sha256": "^0.2.0",
     "socket.io": "^4.7.5",
-    "socket.io-client": "^4.7.5"
+    "socket.io-client": "^4.7.5",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7"
   },
   "devDependencies": {
     "@types/node": "^20.14.2",
