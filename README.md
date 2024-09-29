@@ -40,11 +40,9 @@ To get started with Limbo, follow these steps:
 
 2. Install dependencies: `bun install`
 
-3. Set up the MongoDB database and configure the connection in the `.env` file.
+3. Start the development server: `bun run dev`
 
-4. Start the development server: `bun run dev`
-
-5. Open your browser and navigate to `http://localhost:8080`, or whatever port
+4. Open your browser and navigate to `http://localhost:443`, or whatever port
    that you entered.
 
 ## Notice
