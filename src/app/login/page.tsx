@@ -26,7 +26,7 @@ export default function Login() {
 
       if (response.status === 200) {
         let accountToken = await response.text();
-        localStorage.setItem("token", accountToken);
+        localStorage.setItem("token", JSON.parse(accountToken).token);
         window.location.href = "/";
       } else if (response.status === 401) {
         setError("Invalid username or password");

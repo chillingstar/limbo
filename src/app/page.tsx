@@ -28,9 +28,7 @@ export default function Home() {
     }
 
     function onConnect() {
-      socket.emit("connectionPing", {
-        token: localStorage.getItem("token"),
-      });
+      socket.emit("connectionPing", localStorage.getItem("token"));
 
       setIsConnected(true);
       setTransport(socket.io.engine.transport.name);
@@ -58,11 +56,19 @@ export default function Home() {
         ]);
       });
 
+      socket.on("adminMessage", (message) => {
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          `<strong style="color: red">Admin</strong> ${message}`,
+        ]);
+      });
+
       socket.on("error", (data) => {
         data = JSON.parse(data);
         if (data.message) {
           alert(data.message);
         }
+
         if (data.logout) {
           localStorage.removeItem("token");
           window.location.href = "./login";
@@ -81,7 +87,7 @@ export default function Home() {
       socket.off("announcement");
       socket.off("error");
     };
-  }, [message]);
+  }, []);
 
   const handleMessageSubmit = (e: { preventDefault: () => void }) => {
     e.preventDefault();
@@ -91,28 +97,21 @@ export default function Home() {
         return;
       }
 
-      fetch("/api/checktoken", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ token: localStorage.getItem("token") }),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.error) {
-            alert(data.error);
+      socket.emit("message", {
+        token: localStorage.getItem("token"),
+        message: message,
+      }, (response: { status: number; error?: string }) => {
+        if (response.status === 200) {
+          console.log(`Message sent: ${message}`);
+          setMessage("");
+        } else {
+          alert(response.status + " | " + response.error);
+          if (response.status === 401) {
             localStorage.removeItem("token");
             window.location.href = "./login";
-          } else {
-            console.log(`Sending: ${message}`);
-            socket.emit("message", {
-              token: localStorage.getItem("token"),
-              message: message,
-            });
-            setMessage("");
           }
-        });
+        }
+      });
     }
   };
 
