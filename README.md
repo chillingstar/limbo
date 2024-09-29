@@ -27,7 +27,7 @@ from scratch.
 - TypeScript: A statically typed superset of JavaScript that compiles to plain
   JavaScript.
 
-- MongoDB: A NoSQL database for storing and retrieving data.
+- SQLite: A lightweight SQL Database
 
 - Socket.IO: A library for real-time, bidirectional communication between web
   clients and servers.
@@ -38,14 +38,17 @@ To get started with Limbo, follow these steps:
 
 1. Clone the repository: `git clone https://github.com/chillingstar/limbo.git`
 
-2. Install dependencies: `npm install`
+2. Install dependencies: `bun install`
 
 3. Set up the MongoDB database and configure the connection in the `.env` file.
 
-4. Start the development server: `npm run dev`
+4. Start the development server: `bun run dev`
 
-5. Open your browser and navigate to `http://localhost:80`, or whatever port
+5. Open your browser and navigate to `http://localhost:8080`, or whatever port
    that you entered.
+
+## Notice
+- Please use Bun or Deno, or it wouldn't run.
 
 ## Contributing
 
