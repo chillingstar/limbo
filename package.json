@@ -18,7 +18,7 @@
     "events": "^3.3.0",
     "express": "^4.19.2",
     "net": "^1.0.2",
-    "next": "^14.2.13",
+    "next": "^14.2.10",
     "react": "^18",
     "react-dom": "^18",
     "readable-stream": "^4.5.2",
