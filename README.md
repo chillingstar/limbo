@@ -7,6 +7,9 @@ from scratch.
 [![GitHub commit activity](https://img.shields.io/github/commit-activity/m/chillingstar/limbo)](https://github.com/chillingstar/limbo/commits)
 [![GitHub last commit](https://img.shields.io/github/last-commit/chillingstar/limbo)](https://github.com/chillingstar/limbo/commits)
 
+## Warning
+- Limbo v1 is deprecated, and soon will be replaced with Limbo v2.
+
 ## Features
 
 - Real-time messaging using Socket.IO
