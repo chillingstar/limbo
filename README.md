@@ -1,36 +1,73 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Limbo v2 ⚡
+Limbo is a chat app, written in Next.js and uses Socket.io for transmitting messages.
 
-## Getting Started
+[![GitHub commit activity](https://img.shields.io/github/commit-activity/m/chillingstar/limbo)](https://github.com/chillingstar/limbo/commits)
+[![GitHub last commit](https://img.shields.io/github/last-commit/chillingstar/limbo)](https://github.com/chillingstar/limbo/commits)
 
-First, run the development server:
+## Features
+- Real-time messaging (with Socket.io)
+- User authentication and registration
+- Fast and responsive UI (with React)
+- Lightweight and scalable architecture
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Technologies Used
+- **Next.js**: A React framework for server-side rendering and static site generation.
+- **TailwindCSS**: A utility-first CSS framework for quickly building custom designs.
+- **Socket.io**: A library that enables real-time, bidirectional and event-based communication between the browser and the server.
+- **Prisma**: A modern database toolkit for Node.js and TypeScript.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Deployment
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Docker 🐳
+> Requirement: [Docker](https://docs.docker.com/get-docker/), a supported database ([PostgreSQL](https://postgresql.org), [MySQL](https://mysql.com/), [MariaDB](https://mariadb.org/), [SQLite](https://sqlite.org/), [Microsoft SQL Server](https://microsoft.com/sql-server), [MongoDB](https://mongodb.com/) or [CockroachDB](https://cockroachlabs.com/))
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Clone the repository:
+    ```bash
+    git clone https://github.com/chillingstar/limbo.git
+    ```
+2. Change into the directory, and set the environment variables required for the app.
+3. Build the Docker image:
+    ```bash
+    docker build -t limbo .
+    ```
+4. Run the Docker container:
+    ```bash
+    docker run -p 3000:3000 limbo
+    ```
+    or whatever port you want to assign to Limbo.
 
-## Learn More
+And voila! You have Limbo running on your Docker container.
 
-To learn more about Next.js, take a look at the following resources:
+### Manual Deployment
+> Requirement: [Bun](https://bun.sh), a supported database ([PostgreSQL](https://postgresql.org), [MySQL](https://mysql.com/), [MariaDB](https://mariadb.org/), [SQLite](https://sqlite.org/), [Microsoft SQL Server](https://microsoft.com/sql-server), [MongoDB](https://mongodb.com/) or [CockroachDB](https://cockroachlabs.com/))
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Clone the repository:
+    ```bash
+    git clone https://github.com/chillingstar/limbo.git
+    ```
+2. Change into the directory, and set the environment variables required for the app.
+3. Install the dependencies:
+    ```bash
+    bun install
+    ```
+4. Build the app:
+    ```bash
+    bun run build
+    ```
+5. Start the app:
+    ```bash
+    bun run start
+    ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+And voila! You have Limbo running on your local machine.
 
-## Deploy on Vercel
+## Contributing
+Contributions are welcome! If you find any bugs or have suggestions for improvements, please open an issue or submit a pull request.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Contributors
+- [Luckless](https://github.com/chillingstar): Lead Developer, designing and developing the app.
+- [Azqupai](https://github.com/azqupai): Project Manager, managing the project and the team.
+- [Yasser](https://github.com/realyasser): Developer, helping on the development of the app.
