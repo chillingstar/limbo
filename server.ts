@@ -3,7 +3,7 @@ import { createServer } from 'node:http';
 import next from 'next';
 import { Server } from 'socket.io';
 import { PrismaClient } from '@prisma/client';
-import TypedSchema, { Elysia, t } from 'elysia';
+import { Elysia, t } from 'elysia';
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = process.env.HOSTNAME || 'localhost';
