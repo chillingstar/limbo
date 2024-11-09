@@ -1,0 +1,56 @@
+# Backup files
+*.bak
+
+# VS Code workspace files
+*.code-workspace
+
+# Lock files
+*.lock
+
+# Log files
+*.log
+
+# Old files
+*.old
+
+# Original files
+*.orig
+
+# Swap files
+*.swo
+*.swp
+
+# Temporary files
+*.temp
+*.tmp
+
+# TypeScript build info files
+*.tsbuildinfo
+
+# Environment variable files
+.env
+.env.development.local
+.env.local
+.env.production.local
+.env.test.local
+
+# ESLint cache files
+.eslintcache
+
+# Yarn Plug'n'Play files
+.pnp
+.pnp.js
+
+# Stylelint cache files
+.stylelintcache
+
+# Docker configuration files
+Dockerfile
+docker-compose.yml
+
+# NPM debug log files
+npm-debug.log*
+
+# Yarn debug and error log files
+yarn-debug.log*
+yarn-error.log*
