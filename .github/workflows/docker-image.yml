@@ -1,0 +1,13 @@
+name: Docker Image CI
+on:
+  push:
+    branches: [ "docker-experimental" ]
+  pull_request:
+    branches: [ "docker-experimental" ]
+jobs:
+  build:
+    runs-on: alpine:latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag Limbo:v2-$(date +%s)
