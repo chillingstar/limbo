@@ -1,23 +1,12 @@
-# Load the bun image
-FROM oven/bun:alpine
+FROM oven/bun:latest
 
-WORKDIR /app
-
-# Copying the required package.json and lockfiles to install
 COPY package.json ./
 COPY bun.lockb ./
 
-# Install the dependencies
-RUN bun install --silent --frozen-lockfile
+RUN bun install \
+    --verbose \
+    --no-cache
 
-# Copy the source code to the container
 COPY . .
 
-# Build the application
-RUN bun run build
-
-# Expose the port
-EXPOSE 3000
-
-# Start the application
-CMD ["bun", "run", "start"]
+CMD ["bun", "start"]

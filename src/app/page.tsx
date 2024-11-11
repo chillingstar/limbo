@@ -10,6 +10,7 @@ const socket = io();
 export default function Home() {
   const [connected, setConnected] = useState(false);
   const [transport, setTransport] = useState("N/A");
+  const [connectedUsers, setConnectedUsers] = useState(0);
   const [theme, setTheme] = useState("light");
 
   const toggleTheme = () => {
@@ -49,8 +50,13 @@ export default function Home() {
       setTransport("N/A");
     };
 
+    const updateConnectedUsers = (users: number) => {
+      setConnectedUsers(users);
+    };
+
     socket.on("connect", onConnect);
     socket.on("disconnect", onDisconnect);
+    socket.on("connectedUsers", updateConnectedUsers);
 
     if (socket.connected) {
       onConnect();
@@ -92,8 +98,9 @@ export default function Home() {
 
       <div className="flex flex-grow">
         <div className="flex-grow h-max min-h-[79vh] min-w-screen border rounded-lg m-4 bg-transparent"></div>
-        <div className="flex-grow h-max w-max min-h-[89vh] max-w-[30vh] border rounded-lg m-4 bg-transparent"></div>
-        {/* <div className="w-1/4 h-full border-l m-4 rounded-lg bg-gray-800"></div> */}
+        <div className="flex-grow h-max w-max min-h-[89vh] max-w-[30vh] border rounded-lg m-4 bg-transparent">
+          <p>Connected users (${connectedUsers})</p>
+        </div>
       </div>
     </div>
   );
