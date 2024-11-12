@@ -3,9 +3,9 @@
   "version": "2",
   "private": true,
   "scripts": {
-    "dev": "bun server.ts",
+    "dev": "ts-node server.ts",
     "build": "next build",
-    "start": "NODE_ENV=production bun server.ts",
+    "start": "NODE_ENV=production ts-node server.ts",
     "lint": "next lint",
     "generate": "prisma generate",
     "studio": "prisma studio"
@@ -28,6 +28,7 @@
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
     "tailwindcss": "^3.4.14",
+    "ts-node": "^10.9.2",
     "typescript": "^5.6.3"
   },
   "devDependencies": {

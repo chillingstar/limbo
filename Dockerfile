@@ -1,12 +1,10 @@
-FROM oven/bun:latest
+FROM node:alpine
 
-COPY package.json ./
-COPY bun.lockb ./
+COPY package.json ./package.json
+COPY package-lock.json ./package-lock.json
 
-RUN bun install \
-    --verbose \
-    --no-cache
+RUN npm install --verbose --no-cache
 
 COPY . .
 
-CMD ["bun", "start"]
+CMD ["npm", "start"]
