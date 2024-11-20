@@ -4,8 +4,9 @@ import next from 'next';
 import { Server } from 'socket.io';
 import { PrismaClient } from '@prisma/client';
 import express, { Request, Response } from 'express';
+import { buildHash, candidate, version } from "./version_control/info";
 
-const dev = process.env.NODE_ENV !== 'production';
+const dev = process.env.NODE_ENV !== 'production' && process.env.NODE_ENV == 'development';
 const hostname = process.env.HOSTNAME || 'localhost';
 const port = parseInt(process.env.PORT || '3000', 10);
 
@@ -55,15 +56,40 @@ app.prepare().then(() => {
 
     io.on("connection", (socket) => {
         const time = new Date().toLocaleTimeString();
-        console.log(`${time}: User ${socket.id} connected using ${socket.conn.transport.name}`);
+        console.log(`[${time}] User ${socket.id} connected using ${socket.conn.transport.name}`);
         
         socket.on("disconnect", () => {
-            console.log(`${time}: User ${socket.id} disconnected`);
+            console.log(`[${time}] User ${socket.id} disconnected`);
+        });
+
+        socket.on("message", (message) => {
+            if (message.toString().startsWith("/")) { 
+                socket.emit("system", {
+                    message: `Sorry, System commands are yet to be implemented.`
+                });
+            } else {
+                io.emit("message", {
+                    author: "Anonymous",
+                    message: message.toString().trim().substring(0, 1024)
+                });
+            }
         });
     });
 
     httpServer.listen(port, () => {
-        console.log(`> Ready on http://${hostname}:${port}`);
+        console.log([
+            " _____       _                  __                ",
+            "|_   _|     (_)                [  |               ",
+            "  | |       __    _ .--..--.    | |.--.     .--.   ",
+            "  | |   _  [  |  [ `.-. .-. |   | '/'`\\ \\ / .'`\\ \\ ",
+            " _| |__/ |  | |   | | | | | |   |  \\__/ | | \\__. | ",
+            "|________| [___] [___||__||__] [__;.__.'   '.__.'  ",
+            `Running Limbo ${version}-${candidate} ${process.env.NODE_ENV === 'production' ? 'Production' : 'Development'} Mode`,
+            `Node ${process.version}`,
+            `Limbo build: ${buildHash}`
+            
+        ].join('\n'));
+        console.log(`Limbo is ready on http://${hostname}:${port}`);
     }).on('error', (err) => {
         console.error(err);
         process.exit(1);
