@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button, Input, Navbar, NavbarBrand, NavbarContent } from "@nextui-org/react";
-import { SunIcon, MoonIcon } from "lucide-react";
+import { Button, Input, Card, Navbar, NavbarBrand, NavbarContent, Divider } from "@nextui-org/react";
+import { SunIcon, MoonIcon }  from "lucide-react";
 import io from "socket.io-client";
 
 const socket = io();
@@ -17,6 +17,32 @@ export default function Home() {
     setTheme(theme === "light" ? "dark" : "light");
   };
 
+  const serverLogin = async () => {
+    const userData = localStorage.getItem("user");
+
+    if (userData) {
+      const username = JSON.parse(userData).username;
+      const authenticationToken = JSON.parse(userData).authToken;
+
+      const response = await fetch("/api/authentication", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application"
+        },
+        body: JSON.stringify({
+          username: username,
+          authToken: authenticationToken
+        })
+      });
+
+      if (response.ok) {
+        return { code: 0 };
+      } else {
+        return { code: 1 };
+      }
+    }
+  };
+
   const changeTransport = () => {
     if (socket.connected) {
       socket.disconnect();
@@ -28,10 +54,29 @@ export default function Home() {
   };
 
   const sendMessage = async () => {
-    const messageElement = document.getElementById("message") as HTMLInputElement | null;
-    if (messageElement && messageElement.value) {
-      socket.emit("message", messageElement.value.trim());
-      messageElement.innerText = "";
+    if (connected) {
+      const messageInput = document.getElementById("message") as HTMLInputElement | null;
+      const messageValue = messageInput ? messageInput.value : "";
+
+      if (messageValue) {
+        if (messageValue.trim() == "") {
+          return
+        }
+
+        socket.emit("message", messageValue.trim());
+        if (messageInput) {
+          messageInput.value = "";
+        }
+      }
+    } else {
+      const messageBox = document.getElementById("messageBox");
+      if (messageBox) {
+        const messageElement = document.createElement("p");
+        messageElement.className = `mt-3 ml-3`;
+        messageElement.innerHTML = `<strong style="color: red;">System (Client):</strong> You are not connected to the server, chatting functionalities are disabled.`;
+        messageBox.appendChild(messageElement);
+        messageBox.scrollTop = messageBox.scrollHeight;
+      }
     }
   }
 
@@ -45,13 +90,38 @@ export default function Home() {
   }, [theme]);
 
   useEffect(() => {
-    const onConnect = () => {
-      setConnected(true);
-      setTransport(socket.io.engine.transport.name);
+    const onConnect = async () => {
+      // setConnected(true);
+      // setTransport(socket.io.engine.transport.name);
 
-      socket.io.engine.on("upgrade", (transport) => {
-        setTransport(transport.name);
-      });
+      // socket.io.engine.on("upgrade", (transport) => {
+      //   setTransport(transport.name);
+      // });
+
+      const loginStatus = await serverLogin();
+
+      if (!loginStatus) {
+        window.location.href = "/login";
+        return;
+      }
+
+      switch (loginStatus.code) {
+        case 0:
+          setConnected(true);
+          setTransport(socket.io.engine.transport.name);
+          
+          socket.io.engine.on("upgrade", (transport) => {
+            setTransport(transport.name);
+          });
+
+          break;
+        
+        case 1:
+          window.location.href = "/login";
+
+          break;
+      };
+
     };
 
     const onDisconnect = () => {
@@ -63,6 +133,7 @@ export default function Home() {
       const messageBox = document.getElementById("messageBox");
       if (messageBox) {
         const messageElement = document.createElement("p");
+        messageElement.className = `mt-3 ml-3`;
         messageElement.innerHTML = `<strong style="color: red;">System:</strong> ${message.message}`;
         messageBox.appendChild(messageElement);
         messageBox.scrollTop = messageBox.scrollHeight;
@@ -73,6 +144,7 @@ export default function Home() {
       const messageBox = document.getElementById("messageBox");
       if (messageBox) {
         const messageElement = document.createElement("p");
+        messageElement.className = `mt-3 ml-3`;
         messageElement.textContent = `${message.author}: ${message.message}`;
         messageBox.appendChild(messageElement);
         messageBox.scrollTop = messageBox.scrollHeight;
@@ -156,7 +228,7 @@ export default function Home() {
         {/* Left Column (Main Box + Chat Box) */}
         <div className="flex flex-col flex-grow space-y-1">
           {/* Message Box */}
-          <div id="messageBox" className="flex-grow border rounded-lg m-4 bg-transparent"></div>
+            <Card id="messageBox" className="flex-grow m-4 overflow-y-auto max-h-[88vh]"></Card>
 
           {/* Chat Box */}
             <div className="flex items-center mx-4 space-x-2">
@@ -176,13 +248,14 @@ export default function Home() {
 
 
         {/* connectedUser Box */}
-        <div className="flex flex-col flex-grow h-full w-max min-h-[90vh] max-w-[30vh] border rounded-lg m-4 space-y-5 bg-transparent">
+        <Card className="flex flex-col flex-grow w-max min-h-[80vh] max-h-[80vh] max-w-[30vh] m-4 space-y-5">
             <div className="flex justify-center items-start flex-grow">
-            <p className="text-center font-sans">
+            <p className="text-center font-sans mt-1.5">
               Connected users: {connectedUsers}
             </p>
+            <Divider orientation="vertical" />
             </div>
-        </div>
+        </Card>
       </div>
     </div>
   );

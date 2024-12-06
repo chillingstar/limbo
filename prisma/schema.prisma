@@ -11,6 +11,7 @@ datasource db {
 model User {
   id        Int   @id @default(autoincrement())
   username  String @unique
+  userToken String @unique
   hashedPassword String @unique
   isAdmin Boolean @default(false)
   createdAt DateTime @default(now())

@@ -18,6 +18,36 @@ const server = express();
 
 server.use(express.json());
 
+function generateUserToken() {
+    return Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+}
+
+server.post('/api/authentication', async (req: Request, res: Response) => {
+    const { username, authToken } = req.body;
+
+    if (!/^[a-z0-9]{4,16}$/.test(username)) {
+        return res.status(400).json({ error: 'Invalid username format' });
+    }
+
+    if (!/^[a-f0-9]{128}$/.test(authToken)) {
+        return res.status(400).json({ error: 'Invalid authentication token format' });
+    }
+
+    const user = await prisma.user.findUnique({
+        where: {
+            username
+        }
+    });
+
+    if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+    } else if (user.userToken === authToken) {
+        return res.status(200).json({ success: 'Authentication successful' });
+    } else {
+        return res.status(401).json({ error: 'Invalid authentication token or username' });
+    }
+});
+
 server.post('/api/login', async (req: Request, res: Response) => {
     const { username, hashedPassword } = req.body;
 
@@ -45,6 +75,38 @@ server.post('/api/login', async (req: Request, res: Response) => {
         return res.status(401).json({ error: 'Invalid password' });
     }
 });
+
+server.post('/api/register', async (req: Request, res: Response) => {
+    const { username, hashedPassword } = req.body;
+
+    if (!/^[a-z0-9]{4,16}$/.test(username)) {
+        return res.status(400).json({ error: 'Invalid username format' });
+    }
+
+    if (!/^[a-f0-9]{128}$/.test(hashedPassword)) {
+        return res.status(400).json({ error: 'Invalid password format' });
+    }
+
+    const user = await prisma.user.findUnique({
+        where: {
+            username
+        }
+    });
+
+    if (user) {
+        return res.status(409).json({ error: 'User already exists' });
+    }
+
+    await prisma.user.create({
+        data: {
+            username,
+            hashedPassword,
+            userToken: generateUserToken()
+        }
+    });
+
+    return res.status(201).json({ success: 'User created' });
+}); 
 
 app.prepare().then(() => {
     server.all('*', (req, res) => {
@@ -78,16 +140,16 @@ app.prepare().then(() => {
 
     httpServer.listen(port, () => {
         console.log([
-            " _____       _                  __                ",
-            "|_   _|     (_)                [  |               ",
-            "  | |       __    _ .--..--.    | |.--.     .--.   ",
-            "  | |   _  [  |  [ `.-. .-. |   | '/'`\\ \\ / .'`\\ \\ ",
-            " _| |__/ |  | |   | | | | | |   |  \\__/ | | \\__. | ",
-            "|________| [___] [___||__||__] [__;.__.'   '.__.'  ",
-            `Running Limbo ${version}-${candidate} ${process.env.NODE_ENV === 'production' ? 'Production' : 'Development'} Mode`,
+            "",
+            " _     _           _           ",
+            "| |   (_)_ __ ___ | |__   ___  ",
+            "| |   | | '_ ` _ \\| '_ \\ / _ \\ ",
+            "| |___| | | | | | | |_) | (_) |",
+            "|_____|_|_| |_| |_|_.__/ \\___/ ",
+            "",
+            `Running Limbo ${version} ${candidate} ${process.env.NODE_ENV === 'production' ? 'Production' : 'Development'} Mode`,
             `Node ${process.version}`,
             `Limbo build: ${buildHash}`
-            
         ].join('\n'));
         console.log(`Limbo is ready on http://${hostname}:${port}`);
     }).on('error', (err) => {
