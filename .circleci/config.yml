@@ -14,8 +14,8 @@ jobs:
           name: Install dependencies
           command: npm install --verbose --no-cache
       - run:
-          name: Deploy
-          command: npm run deploy
+          name: Deploy Prisma
+          command: npm run generate
       - run:
           name: Build
           command: npm run build
