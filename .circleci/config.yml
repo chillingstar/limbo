@@ -3,22 +3,30 @@ version: 2.1
 executors:
   node-executor:
     docker:
-      - image: cimg/node:lts
+      - image: oven/bun:alpine
 
 jobs:
   build:
     executor: node-executor
     steps:
       - checkout
+      - restore_cache:
+          keys:
+            - dependency-cache-{{ checksum "bun.lockb" }}
       - run:
           name: Install dependencies
-          command: npm install --verbose --no-cache
+          command: bun install --verbose --no-cache
+      - save_cache:
+          key: dependency-cache-{{ checksum "bun.lockb" }}
+          paths:
+            - ./node_modules
+            - ./.next/cache
       - run:
           name: Deploy Prisma
-          command: npm run generate
+          command: bun run generate
       - run:
           name: Build
-          command: npm run build
+          command: bun run build
 
 workflows:
   version: 2
