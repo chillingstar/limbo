@@ -5,9 +5,6 @@ jobs:
     docker:
       - image: circleci/node:latest
     steps:
-      - checkout
-      - setup_remote_docker:
-          version: 20.10.7
       - run:
           name: Build the Docker image
           command: docker build . --file Dockerfile --tag Limbo:v2-$(date +%s)
