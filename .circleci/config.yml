@@ -16,7 +16,7 @@ jobs:
       - run:
           name: Install dependencies
           command: bun install --verbose --no-cache
-      - generate-prisma:
+      - run:
           name: Generate Prisma
           command: cp .env.example .env
       - save_cache:
