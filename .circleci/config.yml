@@ -7,7 +7,7 @@ jobs:
     steps:
       - run:
           name: Build the Docker image
-          command: docker build . --file Dockerfile --tag Limbo:v2-$(date +%s)
+          command: docker build . --file Dockerfile --tag limbo:v2-$(date +%s)
 
 workflows:
   version: 2
