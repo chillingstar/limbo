@@ -7,4 +7,9 @@ RUN npm install --verbose --no-cache
 
 COPY . .
 
+RUN npm run deploy
+RUN npm run build
+
+EXPOSE 3000
+
 CMD ["npm", "start"]

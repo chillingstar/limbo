@@ -1,13 +1,24 @@
 version: 2.1
 
+executors:
+  node-executor:
+    docker:
+      - image: circleci/node:alpine
+
 jobs:
   build:
-    docker:
-      - image: circleci/node:latest
+    executor: node-executor
     steps:
+      - checkout
       - run:
-          name: Build the Docker image
-          command: docker build . --file Dockerfile --tag limbo:v2-$(date +%s)
+          name: Install dependencies
+          command: npm install --verbose --no-cache
+      - run:
+          name: Deploy
+          command: npm run deploy
+      - run:
+          name: Build
+          command: npm run build
 
 workflows:
   version: 2
