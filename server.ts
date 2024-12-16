@@ -18,6 +18,11 @@ const server = express();
 
 server.use(express.json());
 
+if (process.env.NODE_ENV !== 'development' && process.env.NODE_ENV !== 'production') {
+    console.error("NODE_ENV is unspecified of either development or production, exitting...");
+    process.exit(0);
+}
+
 server.post('/api/login', async (req: Request, res: Response) => {
     const { username, hashedPassword } = req.body;
 
@@ -84,10 +89,9 @@ app.prepare().then(() => {
             "  | |   _  [  |  [ `.-. .-. |   | '/'`\\ \\ / .'`\\ \\ ",
             " _| |__/ |  | |   | | | | | |   |  \\__/ | | \\__. | ",
             "|________| [___] [___||__||__] [__;.__.'   '.__.'  ",
-            `Running Limbo ${version}-${candidate} ${process.env.NODE_ENV === 'production' ? 'Production' : 'Development'} Mode`,
+            `Running Limbo ${version} - ${candidate} ${process.env.NODE_ENV === 'production' ? 'Production' : 'Development'} Mode`,
             `Node ${process.version}`,
             `Limbo build: ${buildHash}`
-            
         ].join('\n'));
         console.log(`Limbo is ready on http://${hostname}:${port}`);
     }).on('error', (err) => {

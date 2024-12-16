@@ -10,16 +10,13 @@ Limbo is a chat app, written in Next.js and uses Socket.io for transmitting mess
 - Fast and responsive UI (with React)
 - Lightweight and scalable architecture
 
-## Technologies Used
-- **Next.js**: A React framework for server-side rendering and static site generation.
-- **TailwindCSS**: A utility-first CSS framework for quickly building custom designs.
-- **Socket.io**: A library that enables real-time, bidirectional and event-based communication between the browser and the server.
-- **Prisma**: A modern database toolkit for Node.js and TypeScript.
-
 ## Deployment
 
 ### Docker 🐳
 > Requirement: [Docker](https://docs.docker.com/get-docker/), a supported database ([PostgreSQL](https://postgresql.org), [MySQL](https://mysql.com/), [MariaDB](https://mariadb.org/), [SQLite](https://sqlite.org/), [Microsoft SQL Server](https://microsoft.com/sql-server), [MongoDB](https://mongodb.com/) or [CockroachDB](https://cockroachlabs.com/))
+
+0. Preparation:
+    - Change the provider in schema.prisma, to the database you want to use.
 
 1. Clone the repository:
     ```bash
@@ -32,14 +29,19 @@ Limbo is a chat app, written in Next.js and uses Socket.io for transmitting mess
     ```
 4. Run the Docker container:
     ```bash
-    docker run -p 3000:3000 limbo
+    docker run -d -p 3000:3000 -e DATABASE_URL=your_database_url -e SERVER_NAME=Limbo limbo
     ```
     or whatever port you want to assign to Limbo.
+
+    If you want to use .env, create one, enter all of the environments and run:
+    ```bash
+    docker run -d -p 3000:3000 --env-file .env limbo
+    ```
 
 And voila! You have Limbo running on your Docker container.
 
 ### Manual Deployment
-> Requirement: [Bun](https://bun.sh), a supported database ([PostgreSQL](https://postgresql.org), [MySQL](https://mysql.com/), [MariaDB](https://mariadb.org/), [SQLite](https://sqlite.org/), [Microsoft SQL Server](https://microsoft.com/sql-server), [MongoDB](https://mongodb.com/) or [CockroachDB](https://cockroachlabs.com/))
+> Requirement: [Bun](https://bun.sh) (or you could use npm but you must regenerate the lockfile using `npm install`.), a supported database ([PostgreSQL](https://postgresql.org), [MySQL](https://mysql.com/), [MariaDB](https://mariadb.org/), [SQLite](https://sqlite.org/), [Microsoft SQL Server](https://microsoft.com/sql-server), [MongoDB](https://mongodb.com/) or [CockroachDB](https://cockroachlabs.com/))
 
 1. Clone the repository:
     ```bash
@@ -65,9 +67,4 @@ And voila! You have Limbo running on your local machine.
 Contributions are welcome! If you find any bugs or have suggestions for improvements, please open an issue or submit a pull request.
 
 ## License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Contributors
-- [Luckless](https://github.com/chillingstar): Lead Developer, designing and developing the app.
-- [Azqupai](https://github.com/azqupai): Project Manager, managing the project and the team.
-- [Yasser](https://github.com/realyasser): Developer, helping on the development of the app.
+This project is licensed under custom licenses - see the [LICENSE](LICENSE) file for details.

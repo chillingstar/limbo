@@ -1,41 +1,38 @@
 {
   "name": "limbo",
-  "version": "2",
+  "version": "2.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "NODE_ENV=development tsx server.ts",
-    "build": "next build",
     "start": "NODE_ENV=production tsx server.ts",
-    "lint": "next lint",
-    "generate": "prisma generate",
-    "studio": "prisma studio"
+    "dev": "NODE_ENV=development tsx server.ts",
+    "build": "next build"
   },
   "dependencies": {
-    "@nextui-org/react": "^2.4.8",
-    "@prisma/client": "^5.22.0",
-    "@types/express": "^5.0.0",
+    "@nextui-org/react": "^2.6.8",
+    "@prisma/client": "^6.0.1",
     "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "eslint": "^8.57.1",
-    "eslint-config-next": "15.0.2",
-    "express": "^4.21.1",
-    "framer-motion": "^11.11.11",
-    "lucide-react": "^0.454.0",
-    "next": "15.0.2",
-    "postcss": "^8.4.47",
-    "prisma": "^5.22.0",
-    "react": "19.0.0-rc-02c0e824-20241028",
-    "react-dom": "19.0.0-rc-02c0e824-20241028",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "framer-motion": "^11.14.4",
+    "lucide-react": "^0.468.0",
+    "next": "15.1.0",
+    "prisma": "^6.0.1",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
-    "tailwindcss": "^3.4.14",
-    "tsx": "^4.19.2",
-    "typescript": "^5.6.3"
+    "tailwindcss": "^3.4.16",
+    "tsx": "^4.19.2"
   },
   "devDependencies": {
-    "@types/node": "^22.9.0",
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.1"
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.0.1",
+    "@types/react-dom": "^19.0.2",
+    "eslint": "^9.17.0",
+    "eslint-config-next": "15.1.0",
+    "postcss": "^8.4.49",
+    "typescript": "^5.7.2"
   }
 }
