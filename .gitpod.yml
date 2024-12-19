@@ -1,5 +1,0 @@
-image: gitpod/workspace-bun
-
-tasks:
-  - name: install dependencies
-    init: bun install
