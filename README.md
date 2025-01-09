@@ -1,8 +1,11 @@
 # Limbo v2 ⚡
 Limbo is a chat app, written in Next.js and uses Socket.io for transmitting messages.
 
-[![GitHub commit activity](https://img.shields.io/github/commit-activity/m/chillingstar/limbo)](https://github.com/chillingstar/limbo/commits)
-[![GitHub last commit](https://img.shields.io/github/last-commit/chillingstar/limbo)](https://github.com/chillingstar/limbo/commits)
+[![GitHub commit activity](https://img.shields.io/github/commit-activity/m/limbochat/limbo-old)](https://github.com/limbochat/limbo-old/commits)
+[![GitHub last commit](https://img.shields.io/github/last-commit/limbochat/limbo-old)](https://github.com/limbochat/limbo-old/commits)
+
+## Notice
+- This project is abandoned and will be moved to a new project.
 
 ## Features
 - Real-time messaging (with Socket.io)
